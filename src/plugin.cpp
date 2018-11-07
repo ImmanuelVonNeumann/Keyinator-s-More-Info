@@ -68,7 +68,7 @@ const char* ts3plugin_name() {
 	/* TeamSpeak expects UTF-8 encoded characters. Following demonstrates a possibility how to convert UTF-16 wchar_t into UTF-8. */
 	static char* result = NULL;  /* Static variable so it's allocated only once */
 	if(!result) {
-		const wchar_t* name = L"!Keyinator's More Info";
+		const wchar_t* name = L"Keyinator's More Info";
 		if(wcharToUtf8(name, &result) == -1) {  /* Convert name into UTF-8 encoded result */
 			result = "Keyinator's More Info";  /* Conversion failed, fallback here */
 		}
@@ -81,7 +81,7 @@ const char* ts3plugin_name() {
 
 /* Plugin version */
 const char* ts3plugin_version() {
-    return "1.3";
+    return "1.4";
 }
 
 /* Plugin API version. Must be the same as the clients API major version, else the plugin fails to load. */
@@ -506,7 +506,7 @@ void ts3plugin_infoData(uint64 serverConnectionHandlerID, uint64 id, enum Plugin
 				VIRTUALSERVER_CHANNEL_TEMP_DELETE_DELAY_DEFAULT
 				*/
 
-			//snprintf(*data, INFODATA_BUFSIZE, "Server-UID: [I]\%s\[/I]", server_uid);  /* bbCode is supported. HTML is not supported */
+			//snprintf(*data, INFODATA_BUFSIZE, "Server-UID: [B]\%s\[/B]", server_uid);  /* bbCode is supported. HTML is not supported */
 
 			break;
 
@@ -515,22 +515,34 @@ void ts3plugin_infoData(uint64 serverConnectionHandlerID, uint64 id, enum Plugin
 			char* channel_name;
 			char* channel_order;
 			char* channel_delete_delay;
+			char* channel_max_clients;
 
 			ts3Functions.getChannelVariableAsString(serverConnectionHandlerID, id, CHANNEL_NAME, &channel_name);
 			ts3Functions.getChannelVariableAsString(serverConnectionHandlerID, id, CHANNEL_ORDER, &channel_order);
 			ts3Functions.getChannelVariableAsString(serverConnectionHandlerID, id, CHANNEL_DELETE_DELAY, &channel_delete_delay);
+			ts3Functions.getChannelVariableAsString(serverConnectionHandlerID, id, CHANNEL_MAXCLIENTS, &channel_max_clients);
 
-			infodata += "Channel-NAME: [I]";
+			infodata += "channel-name: [B]";
 			infodata += channel_name;
-			infodata += "[/I]\n";
-			infodata += "Channel-ORDER: [I]";
+			infodata += "[/B]\n";
+			infodata += "channel-order: [B]";
 			infodata += channel_order;
-			infodata += "[/I]\n";
-			infodata += "Channel-DELETE-DELAY [I]";
+			infodata += "[/B]\n";
+			infodata += "channel-delete-delay: [B]";
 			infodata += channel_delete_delay;
-			infodata += "[/I]\n";
+			infodata += "[/B]\n";
+			infodata += "channel-max_clients: [B]";
+			infodata += channel_max_clients;
+			infodata += "[/B]\n";
+			infodata += "channel-needed_tp: [B]";
+			{
+			char* channel_needed_tp;
+			ts3Functions.getChannelVariableAsString(serverConnectionHandlerID, id, CHANNEL_NEEDED_TALK_POWER, &channel_needed_tp);
+			infodata += channel_needed_tp;
+			}
+			infodata += "[/B]\n";
 			
-			//snprintf(*data, INFODATA_BUFSIZE, "Channel-NAME: [I]\%s\[/I]\n\Channel-ORDER: [I]\%s\[/I]\n\Channel-DELETE-DELAY: [I]\%s\[/I]", channel_name, channel_order, channel_delete_delay);  /* bbCode is supported. HTML is not supported */
+			//snprintf(*data, INFODATA_BUFSIZE, "Channel-NAME: [B]\%s\[/B]\n\Channel-ORDER: [B]\%s\[/B]\n\Channel-DELETE-DELAY: [B]\%s\[/B]", channel_name, channel_order, channel_delete_delay);  /* bbCode is supported. HTML is not supported */
 
 			break;
 
@@ -625,7 +637,11 @@ void ts3plugin_infoData(uint64 serverConnectionHandlerID, uint64 id, enum Plugin
 			ts3Functions.getClientVariableAsString(serverConnectionHandlerID, (anyID)id, CLIENT_COUNTRY, &client_country);
 			ts3Functions.getClientVariableAsString(serverConnectionHandlerID, (anyID)id, CLIENT_BADGES, &client_badges);
 
-			
+			uint64 client_channel;
+			ts3Functions.getChannelOfClient(serverConnectionHandlerID, (anyID)id, &client_channel);
+			char* channel_needed_tp;
+			ts3Functions.getChannelVariableAsString(serverConnectionHandlerID, client_channel, CHANNEL_NEEDED_TALK_POWER, &channel_needed_tp);
+
 
 
 			//---------------------------------------------------------------------------
@@ -635,24 +651,24 @@ void ts3plugin_infoData(uint64 serverConnectionHandlerID, uint64 id, enum Plugin
 			infodata += "------------------------";
 			infodata += "\n";
 			
-			infodata += "name: [I]";
+			infodata += "name: [B]";
 			infodata += client_name;
-			infodata += "[/I]\n";
-			infodata += "uuid: [I]";
+			infodata += "[/B]\n";
+			infodata += "uuid: [B]";
 			infodata += client_uid;
-			infodata += "[/I]\n";
-			infodata += "build: [I]";
+			infodata += "[/B]\n";
+			infodata += "build: [B]";
 			infodata += client_version;
 			infodata += " on ";
 			infodata += client_platform;
-			infodata += "[/I]\n";
-			infodata += "client phonetic name: [I]";
+			infodata += "[/B]\n";
+			infodata += "client phonetic name: [B]";
 			infodata += client_phonetic_nickname;
-			infodata += "[/I]\n";
-			infodata += "country of client: [I]";
+			infodata += "[/B]\n";
+			infodata += "country of client: [B]";
 			infodata += client_country;
-			infodata += "[/I]\n";
-			infodata += "badges of client:";
+			infodata += "[/B]\n";
+			infodata += "badges of client: ";
 			{
 				std::vector<std::string> arr = split(client_badges, ':');
 				if (!arr.empty()) {
@@ -660,7 +676,7 @@ void ts3plugin_infoData(uint64 serverConnectionHandlerID, uint64 id, enum Plugin
 						infodata += "";
 					}
 					else {
-						infodata += " [I]Overwolf[/I]";
+						infodata += "[B]Overwolf[/B]";
 					}
 
 					if (arr.size() > 1) {
@@ -670,11 +686,16 @@ void ts3plugin_infoData(uint64 serverConnectionHandlerID, uint64 id, enum Plugin
 						//printf(arr[1].c_str());
 						for (std::vector<std::string>::iterator it = arr2.begin(); it != arr2.end(); it++) {
 							//printf(it->c_str());
-							infodata += " | [I]";
+							if (it != arr2.begin()) {
+								infodata += " | [B]";
+							}
+							else {
+								infodata += "[B]";
+							}
 							infodata += guid_name(*it);
-							infodata += "[/I]";
+							infodata += "[/B]";
 						}
-						infodata += "\n";
+					infodata += "\n";
 					}
 				}
 
@@ -684,45 +705,45 @@ void ts3plugin_infoData(uint64 serverConnectionHandlerID, uint64 id, enum Plugin
 			infodata += "\n";
 			infodata += "STATUS:";
 			infodata += "\n";
-			//infodata += "Is client talking: [I]";
+			//infodata += "Is client talking: [B]";
 			//infodata += client_talking;
-			//infodata += "[/I]\n";
-			//infodata += "Is client's microphone muted: [I]";
+			//infodata += "[/B]\n";
+			//infodata += "Is client's microphone muted: [B]";
 			//infodata += client_input_muted;
-			//infodata += "[/I]\n";
-			//infodata += "Is client's headset muted: [I]";
+			//infodata += "[/B]\n";
+			//infodata += "Is client's headset muted: [B]";
 			//infodata += client_output_muted;
-			//infodata += "[/I]\n";
-			////infodata += "Is client's outputonly muted: [I]";
+			//infodata += "[/B]\n";
+			////infodata += "Is client's outputonly muted: [B]";
 			////infodata += client_outputonly_muted;
-			////infodata += "[/I]\n";
-			//infodata += "Is client's microphone activated: [I]";
+			////infodata += "[/B]\n";
+			//infodata += "Is client's microphone activated: [B]";
 			//infodata += client_input_hw;
-			//infodata += "[/I]\n";
-			//infodata += "Is client's headset activated: [I]";
+			//infodata += "[/B]\n";
+			//infodata += "Is client's headset activated: [B]";
 			//infodata += client_output_hw;
-			//infodata += "[/I]\n";
-			//infodata += "Is client away: [I]";
+			//infodata += "[/B]\n";
+			//infodata += "Is client away: [B]";
 			//infodata += client_away;
-			//infodata += "[/I]\n";
-			/*infodata += "Away-Message: [I]";
+			//infodata += "[/B]\n";
+			/*infodata += "Away-Message: [B]";
 			infodata += client_away_message;
-			infodata += "[/I]\n";*/
-			infodata += "Has client requested tp: [I]";
+			infodata += "[/B]\n";*/
+			infodata += "has client requested tp: [B]";
 			infodata += client_talk_request;
-			infodata += "[/I]\n";
-			/*infodata += "talkpower request message: [I]";
+			infodata += "[/B]\n";
+			/*infodata += "talkpower request message: [B]";
 			infodata += client_talk_request_msg;
-			infodata += "[/I]\n";*/
-			infodata += "Client-Idle-Time: [I]";
+			infodata += "[/B]\n";*/
+			infodata += "client-idle-time: [B]";
 			infodata += client_idle;
-			infodata += "[/I]\n";
-			infodata += "Client-Muted (by you): [I]";
+			infodata += "[/B]\n";
+			infodata += "client-muted (by you): [B]";
 			infodata += client_muted;
-			infodata += "[/I]\n";
-			infodata += "Is client recording: [I]";
+			infodata += "[/B]\n";
+			infodata += "is client recording: [B]";
 			infodata += client_recording;
-			infodata += "[/I]\n";
+			infodata += "[/B]\n";
 			infodata += "\n";
 
 			//---------------
@@ -732,26 +753,26 @@ void ts3plugin_infoData(uint64 serverConnectionHandlerID, uint64 id, enum Plugin
 			infodata += "------------------------";
 			infodata += "\n";
 
-			infodata += "databaseID: [I]";
+			infodata += "databaseid: [B]";
 			infodata += client_dbid;
-			infodata += "[/I]\n";
-			infodata += "connections to server: [I]";
+			infodata += "[/B]\n";
+			infodata += "connections to server: [B]";
 			infodata += client_connections;
-			infodata += "[/I]\n";
-			infodata += "First connection of client: [I]";
+			infodata += "[/B]\n";
+			infodata += "first connection of client: [B]";
 			infodata += get_time_string(atoi(client_created));;
-			infodata += "[/I]\n";
+			infodata += "[/B]\n";
 
 			infodata += "\n";
-			infodata += "GROUPS: [I]";
-			infodata += "[/I]\n";
+			infodata += "GROUPS: [B]";
+			infodata += "[/B]\n";
 			infodata += "\n";
-			infodata += "servergroupid(s): [I]";
+			infodata += "servergroupid(s): [B]";
 			infodata += client_server_groups;
-			infodata += "[/I]\n";
-			infodata += "channelgroupid: [I]";
+			infodata += "[/B]\n";
+			infodata += "channelgroupid: [B]";
 			infodata += client_channel_group_id;
-			infodata += "[/I]\n";
+			infodata += "[/B]\n";
 
 			//---------------
 
@@ -761,38 +782,40 @@ void ts3plugin_infoData(uint64 serverConnectionHandlerID, uint64 id, enum Plugin
 			infodata += "------------------------";
 			infodata += "\n";
 
-			infodata += "client talkpower: [I]";
+			infodata += "client talkpower: [B]";
 			infodata += client_tp;
-			infodata += "[/I]\n";
-			infodata += "client avatar id: [I]";
+			infodata += "[/B] | [B]";
+			infodata += channel_needed_tp;
+			infodata += "[/B]\n";
+			infodata += "client avatar id: [B]";
 			infodata += client_avatar;
-			infodata += "[/I]\n";
-			infodata += "client icon id: [I]";
+			infodata += "[/B]\n";
+			infodata += "client icon id: [B]";
 			infodata += client_icon_id;
-			infodata += "[/I]\n";
-			infodata += "client is talker: [I]";
+			infodata += "[/B]\n";
+			infodata += "client is talker: [B]";
 			infodata += client_talker;
-			infodata += "[/I]\n";
-			infodata += "client is priority speaker: [I]";
+			infodata += "[/B]\n";
+			infodata += "client is priority speaker: [B]";
 			infodata += client_priority_speaker;
-			infodata += "[/I]\n";
-			infodata += "unread messages clientside: [I]";
+			infodata += "[/B]\n";
+			infodata += "unread messages clientside: [B]";
 			infodata += client_unread_messages;
-			infodata += "[/I]\n";
-			infodata += "client channel commander: [I]";
+			infodata += "[/B]\n";
+			infodata += "client channel commander: [B]";
 			infodata += client_channel_commander;
-			infodata += "[/I]\n";
+			infodata += "[/B]\n";
 
 			//---------------
 
-			/*infodata += "Client description: [I]";
+			/*infodata += "Client description: [B]";
 			infodata += client_description;
-			infodata += "[/I]\n";*/
+			infodata += "[/B]\n";*/
 			
 			
 
 
-			//snprintf(*data, INFODATA_BUFSIZE, "Client-NAME: [I]\%s\[/I]\n\Client-UID: [I]\%s\[/I]\n\Client-VERSION: [I]\%s\[/I]", client_name, client_uid, client_version);  /* bbCode is supported. HTML is not supported */
+			//snprintf(*data, INFODATA_BUFSIZE, "Client-NAME: [B]\%s\[/B]\n\Client-UID: [B]\%s\[/B]\n\Client-VERSION: [B]\%s\[/B]", client_name, client_uid, client_version);  /* bbCode is supported. HTML is not supported */
 			
 			break;
 
