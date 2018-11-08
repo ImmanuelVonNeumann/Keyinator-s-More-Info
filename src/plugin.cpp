@@ -1,7 +1,7 @@
 /*
  * TeamSpeak 3 demo plugin
  *
- * Copyright (c) 2008-2017 TeamSpeak Systems GmbH
+ * Copyright (c) 2018-2018 Immanuel 'Keyinator' von Neumann
  */
 
 #ifdef _WIN32
